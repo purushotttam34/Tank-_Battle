@@ -475,8 +475,8 @@ while running:
         screen.blit(overlay, (0, 0))
         win_text = big_font.render(winner, True, (255, 215, 0))
         screen.blit(win_text, (WIDTH//2 - win_text.get_width()//2, HEIGHT//2 - 110))
-        draw_button("RESTART", pygame.Rect(WIDTH//2 - 190, HEIGHT//2 + 70, 170, 70), (50, 160, 50))
-        draw_button("MAIN MENU", pygame.Rect(WIDTH//2 + 30, HEIGHT//2 + 70, 170, 70), (180, 50, 50))
+        draw_button("RESTART", pygame.Rect(WIDTH//2 - 190, HEIGHT//2 + 70, 190, 70), (50, 160, 50))
+        draw_button("MAIN MENU", pygame.Rect(WIDTH//2 + 30, HEIGHT//2 + 70, 230, 70), (180, 50, 50))
 
     pygame.display.flip()
     clock.tick(60)
