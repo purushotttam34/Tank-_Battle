@@ -1,37 +1,10 @@
-# ========================================================
-# TANK BATTLE - ULTRA SMART AI + FIXED BULLET SPAWN
-# FULLY COMMENTED VERSION WITH ADDED SOUND EFFECTS
-# ========================================================
-# WHAT WAS ADDED (ONLY these changes - nothing else modified):
-#   1. Bullet firing sound (plays instantly when any tank shoots)
-#   2. Convincing background music (loops during gameplay)
-#   3. Comments added to EVERY section, class, function and important line
-#   4. You MUST place these two files in the SAME folder as tank_game.py:
-#        - bullet_fire.wav     (short cannon shot sound)
-#        - background_music.mp3 (tank engine + battlefield ambient)
-# ========================================================
+import pygame
+import math
+import random
+import sys
 
-import pygame      # Core library for creating the game window, graphics and input
-import math        # Used for angles, trigonometry (tank movement, bullet direction)
-import random      # Random map selection and AI decisions
-import sys         # Used only for clean exit at the end
-
-# Initialize Pygame (graphics + input)
+# Initialize Pygame
 pygame.init()
-
-# ==================== SOUND SYSTEM ADDED HERE ====================
-# Prepares audio mixer so we can play sound effects and music
-pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
-
-# Bullet firing sound (short, realistic cannon shot)
-# NOTE: Place 'bullet_fire.wav' in the same folder as this file
-bullet_sound = pygame.mixer.Sound("bullet_fire.wav.mp3")
-
-# Background music (convincing tank battle atmosphere - engine rumble + distant explosions)
-# NOTE: Place 'background_music.mp3' in the same folder as this file
-pygame.mixer.music.load("background_music.mp3")
-pygame.mixer.music.set_volume(0.35)   # Balanced volume (not too loud)
-# ================================================================
 
 # Constants
 WIDTH, HEIGHT = 1000, 650
@@ -53,7 +26,7 @@ BLUE = (0, 0, 200)
 BLACK = (20, 20, 20)
 WHITE = (255, 255, 255)
 
-# 5 maps (unchanged - each map is a list of obstacle rectangles)
+# 5 maps (unchanged)
 map_list = [
     [pygame.Rect(250, 90, 40, 200), pygame.Rect(250, 360, 40, 200),
      pygame.Rect(420, 200, 200, 40), pygame.Rect(680, 90, 40, 240),
@@ -72,7 +45,6 @@ map_list = [
      pygame.Rect(90, 300, 130, 45), pygame.Rect(780, 300, 130, 45)],
 ]
 
-# Bullet class - represents a flying projectile
 class Bullet:
     def __init__(self, x, y, angle, owner):
         self.x = x
@@ -83,15 +55,12 @@ class Bullet:
         self.owner = owner
 
     def update(self):
-        # Move bullet using trigonometry
         self.x += math.cos(math.radians(self.angle)) * self.speed
         self.y += math.sin(math.radians(self.angle)) * self.speed
 
     def draw(self, screen):
-        # Draw bullet as a yellow circle
         pygame.draw.circle(screen, (255, 215, 0), (int(self.x), int(self.y)), self.radius)
 
-# Tank class - handles both player and AI tanks
 class Tank:
     def __init__(self, x, y, angle, color, player_num):
         self.x = x
@@ -109,7 +78,6 @@ class Tank:
         self.surf = self.create_tank_surface()
 
     def create_tank_surface(self):
-        # Creates the visual tank image (body + turret + barrel)
         surf = pygame.Surface((74, 48), pygame.SRCALPHA)
         pygame.draw.rect(surf, (50, 50, 50), (4, 5, 66, 13))
         pygame.draw.rect(surf, (50, 50, 50), (4, 30, 66, 13))
@@ -119,7 +87,6 @@ class Tank:
         return surf
 
     def draw(self, screen):
-        # Rotate and draw the tank, plus health bar
         rotated = pygame.transform.rotate(self.surf, -self.angle)
         rect = rotated.get_rect(center=(self.x, self.y))
         screen.blit(rotated, rect.topleft)
@@ -130,7 +97,6 @@ class Tank:
         pygame.draw.rect(screen, (0, 255, 0), (self.x - bar_w//2, self.y - 48, bar_w * ratio, 9))
 
     def move(self, forward, obstacles, other_tank=None):
-        # Move tank forward or backward while checking collisions
         dx = math.cos(math.radians(self.angle)) * self.speed
         dy = math.sin(math.radians(self.angle)) * self.speed
         if not forward:
@@ -157,11 +123,9 @@ class Tank:
         self.y = new_y
 
     def rotate(self, direction):
-        # Rotate tank left or right
         self.angle = (self.angle + direction * self.rot_speed) % 360
 
     def update_ammo(self, game_start_time):
-        # Regenerate ammo over time
         now = pygame.time.get_ticks()
         elapsed = now - game_start_time
         interval = 1000 if elapsed < 5000 else 2000
@@ -170,7 +134,6 @@ class Tank:
             self.last_regen = now
 
     def shoot(self, bullets_list):
-        # Fire a bullet (with fixed spawn point from tank body front)
         now = pygame.time.get_ticks()
         if (self.ammo > 0 and now - self.last_shot > 380 and
             len([b for b in bullets_list if b.owner == self.player_num]) < 5):
@@ -182,9 +145,6 @@ class Tank:
             bullets_list.append(Bullet(bx, by, self.angle, self.player_num))
             self.ammo -= 1
             self.last_shot = now
-            # ==================== SOUND ADDED HERE ====================
-            # Play the bullet firing sound every time a tank shoots
-            bullet_sound.play()
 
 # ====================== GLOBAL VARIABLES ======================
 tank1 = tank2 = None
@@ -198,14 +158,12 @@ state = "main"
 winner = None
 
 def draw_button(text, rect, color):
-    # Helper to draw nice rounded buttons
     pygame.draw.rect(screen, color, rect, border_radius=15)
     pygame.draw.rect(screen, (0, 0, 0), rect, 5, border_radius=15)
     txt = font.render(text, True, WHITE)
     screen.blit(txt, txt.get_rect(center=rect.center))
 
 def has_line_of_sight(attacker, target, obstacles):
-    # Checks if there is a clear line between two tanks (used by AI)
     dx = target.x - attacker.x
     dy = target.y - attacker.y
     dist = math.hypot(dx, dy)
@@ -219,7 +177,6 @@ def has_line_of_sight(attacker, target, obstacles):
     return True
 
 def find_safe_position(side, obstacles):
-    # Finds a safe starting position for tanks (no overlap with obstacles)
     if side == "left":
         x_range = range(100, 240)
     else:
@@ -233,7 +190,6 @@ def find_safe_position(side, obstacles):
     return 160 if side == "left" else WIDTH - 160, HEIGHT // 2
 
 def start_new_game(with_bot):
-    # Resets everything and starts a fresh match
     global tank1, tank2, bullets, obstacles, game_start_time, two_player_mode, paused, winner, last_with_bot
     two_player_mode = not with_bot
     last_with_bot = with_bot
@@ -252,11 +208,6 @@ def start_new_game(with_bot):
     if not two_player_mode:
         tank2.speed = 2.5
         tank2.rot_speed = 2.9
-
-    # ==================== BACKGROUND MUSIC START ====================
-    # Start the convincing battlefield background sound (loops forever)
-    pygame.mixer.music.play(-1)
-    # ================================================================
 
 def ai_control(bot, target, obstacles, bullets_list):
     """ULTRA SMART AI - Smooth steering + real path calculation + bullet/wood dodging"""
@@ -354,7 +305,7 @@ def ai_control(bot, target, obstacles, bullets_list):
         bot.rotate(random.choice([47, -47]))
         bot.move(True, obstacles, target)
 
-# ====================== MAIN GAME LOOP ======================
+# ====================== MAIN LOOP ======================
 running = True
 while running:
     for event in pygame.event.get():
@@ -469,7 +420,7 @@ while running:
                         bullets.remove(b)
                         break
 
-    # ====================== DRAW EVERYTHING ======================
+    # ====================== DRAW ======================
     screen.fill(SKY)
     pygame.draw.rect(screen, GROUND, (0, HEIGHT - 85, WIDTH, 85))
 
@@ -530,6 +481,5 @@ while running:
     pygame.display.flip()
     clock.tick(60)
 
-# Clean exit
 pygame.quit()
 sys.exit()
