@@ -117,7 +117,7 @@ def _handle_player_input(keys, game: GameManager, sound_manager) -> None:
         if keys[pygame.K_RIGHT]:
             game.tank2.angle = 0
             game.tank2.move(True, game.obstacles, game.tank1)
-        if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]:
+        if keys[pygame.K_RETURN] :
             game.tank2.shoot(game.bullets, sound_manager)
     else:
         ai_control(game.tank2, game.tank1, game.obstacles, game.bullets)
